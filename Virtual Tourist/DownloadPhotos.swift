@@ -12,45 +12,45 @@ import UIKit
 
 class DownloadPhotos {
     
-    let delegate = UIApplication.sharedApplication().delegate as! AppDelegate
+    let delegate = UIApplication.shared.delegate as! AppDelegate
     
-    func flickrURLFromParameters(parameters: [String:AnyObject]) -> NSURL {
+    func flickrURLFromParameters(_ parameters: [String:AnyObject]) -> URL {
         
-        let components = NSURLComponents()
+        var components = URLComponents()
         components.scheme = Constants.Flickr.APIScheme
         components.host = Constants.Flickr.APIHost
         components.path = Constants.Flickr.APIPath
-        components.queryItems = [NSURLQueryItem]()
+        components.queryItems = [URLQueryItem]()
         
         for (key, value) in parameters {
-            let queryItem = NSURLQueryItem(name: key, value: "\(value)")
+            let queryItem = URLQueryItem(name: key, value: "\(value)")
             components.queryItems!.append(queryItem)
         }
         
-        return components.URL!
+        return components.url!
     }
     
-    func displayImageFromFlickr(pin: Pin, completionHandlerForPhotos: (results: [[String:AnyObject]]?, pagesNumber: Int, error: String?) -> Void)  {
+    func displayImageFromFlickr(_ pin: Pin, completionHandlerForPhotos: @escaping (_ results: [[String:AnyObject]]?, _ pagesNumber: Int, _ error: String?) -> Void)  {
         
         let pageChoosen = randomPage((pin.pages as? Int)!)
         
-        let methodParameters: [String: String!] = [Constants.FlickrParameterKeys.Method:Constants.FlickrParameterValues.SearchMethod, Constants.FlickrParameterKeys.APIKey: Constants.FlickrParameterValues.APIKey, Constants.FlickrParameterKeys.BoundingBox: bBoxString((pin.latitude as? Double)!, Long: (pin.longitude as? Double)!), Constants.FlickrParameterKeys.Extras: Constants.FlickrParameterValues.MediumURL, Constants.FlickrParameterKeys.Page: String(pageChoosen), Constants.FlickrParameterKeys.Format: Constants.FlickrParameterValues.ResponseFormat, Constants.FlickrParameterKeys.NoJSONCallback: Constants.FlickrParameterValues.DisableJSONCallback]
+        let methodParameters: [String: String?] = [Constants.FlickrParameterKeys.Method:Constants.FlickrParameterValues.SearchMethod, Constants.FlickrParameterKeys.APIKey: Constants.FlickrParameterValues.APIKey, Constants.FlickrParameterKeys.BoundingBox: bBoxString((pin.latitude as? Double)!, Long: (pin.longitude as? Double)!), Constants.FlickrParameterKeys.Extras: Constants.FlickrParameterValues.MediumURL, Constants.FlickrParameterKeys.Page: String(pageChoosen), Constants.FlickrParameterKeys.Format: Constants.FlickrParameterValues.ResponseFormat, Constants.FlickrParameterKeys.NoJSONCallback: Constants.FlickrParameterValues.DisableJSONCallback]
         
-        let request = NSURLRequest(URL: flickrURLFromParameters(methodParameters))
+        let request = URLRequest(url: flickrURLFromParameters(methodParameters as [String : AnyObject]))
         
-        let task = NSURLSession.sharedSession().dataTaskWithRequest(request) { (data, response, error) in
+        let task = URLSession.shared.dataTask(with: request, completionHandler: { (data, response, error) in
             
-            func errorFound(error: String) {
+            func errorFound(_ error: String) {
                 print(error)
-                completionHandlerForPhotos(results: nil, pagesNumber: 0, error: error)
+                completionHandlerForPhotos(nil, 0, error)
             }
 
             guard (error == nil) else {
                 errorFound((error?.localizedDescription)!)
                 return
             }
-            guard let statusCode = (response as? NSHTTPURLResponse)?.statusCode where statusCode >= 200 && statusCode <= 299 else {
-                errorFound("Status Code was \(response as? NSHTTPURLResponse)?.statusCode), which in not within the 200 to 299 range")
+            guard let statusCode = (response as? HTTPURLResponse)?.statusCode , statusCode >= 200 && statusCode <= 299 else {
+                errorFound("Status Code was \(response as? HTTPURLResponse)?.statusCode), which in not within the 200 to 299 range")
                 return
             }
             guard let data = data else {
@@ -60,7 +60,7 @@ class DownloadPhotos {
             
             var parsedData: AnyObject!
             do {
-                parsedData = try NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments)
+                parsedData = try JSONSerialization.jsonObject(with: data, options: .allowFragments) as AnyObject!
             } catch {
                 errorFound("Unable to successfully parse data")
             }
@@ -79,14 +79,14 @@ class DownloadPhotos {
             
           let finalPhotoArray = self.randomPhotos(photoArray)
             
-          completionHandlerForPhotos(results: finalPhotoArray, pagesNumber: pagesNumber, error: nil)
+          completionHandlerForPhotos(finalPhotoArray, pagesNumber, nil)
             
-        }
+        }) 
         
         task.resume()
     }
     
-    func randomPage(pages: Int) -> Int {
+    func randomPage(_ pages: Int) -> Int {
         var pageChoosen = Int()
         
         if pages == 0 {
@@ -97,7 +97,7 @@ class DownloadPhotos {
         return pageChoosen
     }
     
-    func randomPhotos(photoArray: [[String:AnyObject]]) -> [[String:AnyObject]] {
+    func randomPhotos(_ photoArray: [[String:AnyObject]]) -> [[String:AnyObject]] {
         
         let number = Int(arc4random_uniform(UInt32(photoArray.count - 21)))
         
@@ -119,7 +119,7 @@ class DownloadPhotos {
         return finalPhotoArray
     }
     
-    func bBoxString(Lat: Double, Long: Double) -> String {
+    func bBoxString(_ Lat: Double, Long: Double) -> String {
         
         let minimumLong =  min(Long + Constants.Flickr.SearchBBoxHalfWidth, Constants.Flickr.SearchLonRange.1)
         

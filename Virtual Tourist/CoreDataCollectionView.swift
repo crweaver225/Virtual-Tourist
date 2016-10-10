@@ -14,17 +14,17 @@ class CoreDataCollectionView: UIViewController, UICollectionViewDelegate {
     
     @IBOutlet weak var CollectionView: UICollectionView!
     
-    let delegate = UIApplication.sharedApplication().delegate as! AppDelegate
+    let delegate = UIApplication.shared.delegate as! AppDelegate
     
-    var selectedIndexes = [NSIndexPath]()
+    var selectedIndexes = [IndexPath]()
     
-    var insertedIndexPaths = [NSIndexPath]()
+    var insertedIndexPaths = [IndexPath]()
     
-    var deletedIndexPaths = [NSIndexPath]()
+    var deletedIndexPaths = [IndexPath]()
     
-    var updatedIndexPaths = [NSIndexPath]()
+    var updatedIndexPaths = [IndexPath]()
     
-    var fetchedResultsController : NSFetchedResultsController?{
+    var fetchedResultsController : NSFetchedResultsController<Photos>?{
         didSet{
             self.fetchedResultsController?.delegate = self
             self.executeSearch()
@@ -48,7 +48,7 @@ class CoreDataCollectionView: UIViewController, UICollectionViewDelegate {
 
 extension CoreDataCollectionView{
     
-    func numberOfSectionsInCollectionView(collectionView: UICollectionView) -> Int {
+    func numberOfSectionsInCollectionView(_ collectionView: UICollectionView) -> Int {
         
         if let count = self.fetchedResultsController{
            return (count.sections?.count)!
@@ -57,7 +57,7 @@ extension CoreDataCollectionView{
        }
     }
     
-    func collectionView(collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
     
         if let sectionInfo = self.fetchedResultsController!.sections {
             return sectionInfo[section].numberOfObjects
@@ -66,17 +66,17 @@ extension CoreDataCollectionView{
         }
     }
 
-    func collectionView(collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAtIndexPath indexPath: NSIndexPath) -> CGSize {
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAtIndexPath indexPath: IndexPath) -> CGSize {
         
         let numberOfCell: CGFloat = 3   //you need to give a type as CGFloat
-        let cellWidth = UIScreen.mainScreen().bounds.size.width / numberOfCell
-        return CGSizeMake(cellWidth, cellWidth)
+        let cellWidth = UIScreen.main.bounds.size.width / numberOfCell
+        return CGSize(width: cellWidth, height: cellWidth)
     }
 
-    func collectionView(collectionView: UICollectionView, didSelectItemAtIndexPath indexPath:NSIndexPath) {
+    @objc(collectionView:didSelectItemAtIndexPath:) func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath:IndexPath) {
         
         if let fc = self.fetchedResultsController {
-            fc.managedObjectContext.deleteObject((fetchedResultsController?.objectAtIndexPath(indexPath))! as! NSManagedObject)
+            fc.managedObjectContext.delete((fetchedResultsController?.object(at: indexPath))! as! NSManagedObject)
             delegate.stack?.save()
         }
     }
@@ -84,23 +84,23 @@ extension CoreDataCollectionView{
 
 extension CoreDataCollectionView: NSFetchedResultsControllerDelegate{
     
-    func controllerWillChangeContent(controller: NSFetchedResultsController) {
+    func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         
         self.insertedIndexPaths.removeAll()
         self.deletedIndexPaths.removeAll()
         self.updatedIndexPaths.removeAll()
     }
     
-    func controller(controller: NSFetchedResultsController, didChangeObject anObject: AnyObject, atIndexPath indexPath: NSIndexPath?, forChangeType type: NSFetchedResultsChangeType, newIndexPath: NSIndexPath?) {
+    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
         
         switch type {
-        case .Insert:
+        case .insert:
             self.insertedIndexPaths.append(newIndexPath!)
             break
-        case .Delete:
+        case .delete:
             self.deletedIndexPaths.append(indexPath!)
             break
-        case .Update:
+        case .update:
             self.updatedIndexPaths.append(indexPath!)
             break
         default:
@@ -108,20 +108,20 @@ extension CoreDataCollectionView: NSFetchedResultsControllerDelegate{
         }
     }
     
-    func controllerDidChangeContent(controller: NSFetchedResultsController) {
+    func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         
         self.CollectionView.performBatchUpdates({ () -> Void in
             
             for indexPath in self.insertedIndexPaths {
-                self.CollectionView.insertItemsAtIndexPaths([indexPath])
+                self.CollectionView.insertItems(at: [indexPath])
             }
             
             for indexPath in self.deletedIndexPaths {
-                self.CollectionView.deleteItemsAtIndexPaths([indexPath])
+                self.CollectionView.deleteItems(at: [indexPath])
             }
  
             for indexPath in self.updatedIndexPaths {
-                self.CollectionView.reloadItemsAtIndexPaths([indexPath])
+                self.CollectionView.reloadItems(at: [indexPath])
             }
             
             }, completion: nil)

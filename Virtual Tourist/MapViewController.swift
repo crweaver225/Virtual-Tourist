@@ -12,14 +12,14 @@ import CoreData
 
 class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognizerDelegate {
     
-    var fetchedResultsController: NSFetchedResultsController!
+    var fetchedResultsController: NSFetchedResultsController<Pin>!
     
-    let fr = NSFetchRequest(entityName: "Pin")
+    let fr = NSFetchRequest<Pin>(entityName: "Pin")
     let sortDescriptors = [NSSortDescriptor(key: "latitude", ascending: true),
     NSSortDescriptor(key: "longitude", ascending: false)]
     
     
-    let delegate = UIApplication.sharedApplication().delegate as! AppDelegate
+    let delegate = UIApplication.shared.delegate as! AppDelegate
     
     var deleteAllowed: Bool = false
     
@@ -32,10 +32,10 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
     @IBOutlet weak var deleteTextView: UITextView!
     @IBOutlet weak var doneEditingButton: UIButton!
     
-    @IBAction func doneEditingPushed(sender: AnyObject) {
+    @IBAction func doneEditingPushed(_ sender: AnyObject) {
         deleteAllowed = false
-        doneEditingButton.hidden = true
-        editButton.enabled = true
+        doneEditingButton.isHidden = true
+        editButton.isEnabled = true
         
         deleteTextView.frame.origin.y = (view.frame.height - deleteTextView.frame.height)
         
@@ -47,11 +47,11 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
         appHadStarted = true
     }
     
-    @IBAction func editButtonPushed(sender: AnyObject) {
+    @IBAction func editButtonPushed(_ sender: AnyObject) {
         deleteTextView.frame.origin.y = view.frame.height
-        deleteTextView.hidden = false
-        doneEditingButton.hidden = false
-        editButton.enabled = false
+        deleteTextView.isHidden = false
+        doneEditingButton.isHidden = false
+        editButton.isEnabled = false
         
         UIView.beginAnimations(nil, context: nil)
         deleteTextView.frame.origin.y -= deleteTextView.frame.height
@@ -66,10 +66,10 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
         
         mapView.delegate = self
         
-        doneEditingButton.hidden = true
-        deleteTextView.hidden = true
+        doneEditingButton.isHidden = true
+        deleteTextView.isHidden = true
         
-        let gestureRecognizer = UILongPressGestureRecognizer(target: self, action:"handleTap:")
+        let gestureRecognizer = UILongPressGestureRecognizer(target: self, action:#selector(MapViewController.handleTap(_:)))
         gestureRecognizer.minimumPressDuration = 1.0
         gestureRecognizer.allowableMovement = 1
         gestureRecognizer.delegate = self
@@ -83,7 +83,7 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
         fr.sortDescriptors = sortDescriptors
         fetchedResultsController = NSFetchedResultsController(fetchRequest: fr, managedObjectContext: (delegate.stack?.context)!, sectionNameKeyPath: nil, cacheName: nil)
         
-        performFectch()
+        performFetch()
         
         for i in fetchedResultsController.fetchedObjects! {
             let managed = i as? NSManagedObject
@@ -102,12 +102,12 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
         mapView.addAnnotations(annotations)
     }
     
-    func handleTap(gestureReconizer: UILongPressGestureRecognizer) {
-        if (gestureReconizer.state == UIGestureRecognizerState.Began) {
+    func handleTap(_ gestureReconizer: UILongPressGestureRecognizer) {
+        if (gestureReconizer.state == UIGestureRecognizerState.began) {
             if !deleteAllowed {
-                let location = gestureReconizer.locationInView(mapView)
+                let location = gestureReconizer.location(in: mapView)
                 
-                let coordinate = mapView.convertPoint(location,toCoordinateFromView: mapView)
+                let coordinate = mapView.convert(location,toCoordinateFrom: mapView)
                 
                 let annotation = MKPointAnnotation()
                 annotation.coordinate = coordinate
@@ -123,14 +123,14 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
         }
     }
     
-    func mapView(mapView: MKMapView, viewForAnnotation annotation: MKAnnotation) -> MKAnnotationView? {
+    func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
         let reuseId = "pins"
         
-        var pinView = mapView.dequeueReusableAnnotationViewWithIdentifier(reuseId) as? MKPinAnnotationView
+        var pinView = mapView.dequeueReusableAnnotationView(withIdentifier: reuseId) as? MKPinAnnotationView
         
         if pinView == nil {
             pinView = MKPinAnnotationView(annotation: annotation, reuseIdentifier: reuseId)
-            pinView!.pinColor = .Red
+            pinView!.pinColor = .red
         }
         else {
             pinView!.annotation = annotation
@@ -139,8 +139,7 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
         return pinView
     }
     
-    
-    func mapView(mapView: MKMapView, didSelectAnnotationView view: MKAnnotationView) {
+    func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
 
         fr.sortDescriptors = sortDescriptors
         
@@ -148,25 +147,23 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
         
         let pred2 = NSPredicate(format: "longitude = %@", argumentArray: [(view.annotation?.coordinate.longitude)!])
         
-        let andPredicate = NSCompoundPredicate(type: NSCompoundPredicateType.AndPredicateType, subpredicates: [pred1, pred2])
+        let andPredicate = NSCompoundPredicate(type: NSCompoundPredicate.LogicalType.and, subpredicates: [pred1, pred2])
         
         fr.predicate = andPredicate
         
-        performFectch()
+        performFetch()
         
         let pinResults = fetchedResultsController?.fetchedObjects
         
-        let manipulatedPinResults = pinResults![0] as? NSManagedObject
-        
-        let selectedPin = manipulatedPinResults as? Pin
-        
+        let selectedPin = pinResults![0]
+ 
             if deleteAllowed {
                 var indexCounter = 0
                 for items in annotations {
-                    if selectedPin?.latitude == items.coordinate.latitude && selectedPin?.longitude == items.coordinate.longitude  {
+                    if selectedPin.latitude as! Double == items.coordinate.latitude && selectedPin.longitude as! Double == items.coordinate.longitude  {
                         mapView.removeAnnotations(annotations)
-                        annotations.removeAtIndex(indexCounter)
-                        fetchedResultsController.managedObjectContext.deleteObject(selectedPin!)
+                        annotations.remove(at: indexCounter)
+                        fetchedResultsController.managedObjectContext.delete(selectedPin)
                         delegate.stack?.save()
                         generateMap()
                         return
@@ -174,18 +171,19 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
                     indexCounter += 1
                 }
             } else {
-                let CollectionVC = self.storyboard!.instantiateViewControllerWithIdentifier("CollectionViewController") as! CollectionViewController
+                let CollectionVC = self.storyboard!.instantiateViewController(withIdentifier: "CollectionViewController") as! CollectionViewController
                 CollectionVC.pin = selectedPin
                 
                 self.navigationController!.pushViewController(CollectionVC, animated: true)
                 
                 mapView.deselectAnnotation(view.annotation, animated: false)
                 
-                deleteTextView.hidden = true
+                deleteTextView.isHidden = true
             }
         }
     
-    func performFectch() {
+    func performFetch() {
+        
         do{
             try fetchedResultsController.performFetch()
         }catch {
@@ -193,7 +191,7 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
         }
     }
     
-    override func didRotateFromInterfaceOrientation(fromInterfaceOrientation: UIInterfaceOrientation) {
+    override func didRotate(from fromInterfaceOrientation: UIInterfaceOrientation) {
         
         if deleteAllowed {
             deleteTextView.frame.origin.y = (view.frame.height - deleteTextView.frame.height)
@@ -203,5 +201,4 @@ class MapViewController: UIViewController, MKMapViewDelegate, UIGestureRecognize
             mapView.frame.origin.y = 0
         }
     }
-
 }
