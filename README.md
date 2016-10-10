@@ -7,7 +7,7 @@ Virtual Tourist is an iOS app that allows users to place pins on a map and then 
 
 ## Requirements to Use the App:
 
-The app is currently written for Swift 2.2 and for iOS 7-9. It is currently not compatible with Swift 3 or iOS 10. 
+This app is now written in Swift 3 and works with iOS 10
 
 ## Other Things to Know:
 
