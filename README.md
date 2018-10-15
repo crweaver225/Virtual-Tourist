@@ -1,5 +1,14 @@
 # Virtual Tourist
 
+
+[![Language](https://img.shields.io/badge/Swift-3.0-orange.svg?style=flat)](https://swift.org)
+[![Licence](https://img.shields.io/dub/l/vibe-d.svg?maxAge=2592000)](https://opensource.org/licenses/MIT)
+
+
+
+![PinController. Location](https://github.com/crweaver225/Virtual-Tourist/blob/master/screenshots/map-controller.png)
+![PinController. Location](https://github.com/crweaver225/Virtual-Tourist/blob/master/screenshots/collection-controller.png)
+
 ## About the App:
 
 Virtual Tourist is an iOS app that allows users to place pins on a map and then view images geolocated to that area on the map.  Gesture recognizers provide an intuitive experience where holding down a finger on a map places a pin in that location. The pins are persisted on the device and when clicked, utilize geolocation and the Flickr api to show relevant images. Images are persisted as well to provide a smooth user experience. 
